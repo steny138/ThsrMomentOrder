@@ -18,7 +18,8 @@ class wait_for_text_to_match(object):
 
     def __call__(self, driver):
         try:
-            element_text = EC._find_element(driver, self.locator).get_attribute("value")
+            element_text = EC._find_element(
+                driver, self.locator).get_attribute("value")
             print(element_text)
             return self.pattern.search(element_text)
         except StaleElementReferenceException:
@@ -28,6 +29,9 @@ class wait_for_text_to_match(object):
 def main():
     try:
         print('start...')
+
+        delay = 10
+
         browser = webdriver.Chrome('webdrivers/chromedriver')
         browser.get('https://irs.thsrc.com.tw/IMINT/')
 
@@ -82,7 +86,7 @@ def main():
         # homeCaptcha:securityCode
         # BookingS1Form_homeCaptcha_passCode
 
-        image_verify = WebDriverWait(browser, 10).until(
+        image_verify = WebDriverWait(browser, delay).until(
             EC.presence_of_element_located(
                 (By.ID, "BookingS1Form_homeCaptcha_passCode"))
         )
@@ -91,13 +95,13 @@ def main():
         src = image_verify.get_attribute("src")
 
         # 直接key在webdriver上 當輸入完 直接繼續
-       	element_verify = WebDriverWait(browser, 10).until(
-            wait_for_text_to_match((By.NAME, "homeCaptcha:securityCode"), r"[0-9A-Z]{4}")
+        element_verify = WebDriverWait(browser, delay).until(
+            wait_for_text_to_match(
+                (By.NAME, "homeCaptcha:securityCode"), r"[0-9A-Z]{4}")
         )
 
         # 利用console輸入 anaconda console不支援
         # user_input = raw_input("security code is: ")
-
         # element_verify = browser.find_element_by_name(
         #     "homeCaptcha:securityCode")
         # element_verify.clear()
@@ -107,8 +111,65 @@ def main():
         browser.find_element_by_name("SubmitButton").click()
         browser.get_screenshot_as_file("Screenshots/1.png")
 
+        # -------------- second page --------------
+
+        # page load is ok!
+        WebDriverWait(browser, delay).until(
+            EC.presence_of_element_located((By.NAME, "TrainQueryDataViewPanel:TrainGroup")))
+
+        span_codes = browser.find_elements_by_id("QueryCode")
+
+        has_situation = False
+
+        for span_code in span_codes:
+            if span_code.text == "151":
+                element_chkShift = span_code.find_element_by_xpath(
+                    "../../td[1]/input")
+                element_chkShift.click()
+                has_situation = True
+                break
+
+        if not has_situation :
+            raise Exception("沒有符合班次")
+        else :
+        	browser.get_screenshot_as_file("Screenshots/2.png")
+        	browser.find_element_by_name("SubmitButton").submit()
+
+
+    	# -------------- second page --------------
+
+    	# page load is ok!
+    	WebDriverWait(browser, delay).until(
+            EC.presence_of_element_located((By.NAME, "idInputRadio:idNumber")))
+
+    	# idInputRadio1
+    	browser.find_element_by_id("idInputRadio1").click()
+
+    	# idInputRadio:idNumber - idNumber
+    	element_id = browser.find_element_by_id("idNumber")
+        element_id.clear()
+        element_id.send_keys("N124885927")
+
+    	# mobileInputRadio
+    	browser.find_element_by_id("mobileInputRadio").click()
+
+    	# eaiPhoneCon:phoneInputRadio:mobilePhone - mobilePhone
+    	element_mobile = browser.find_element_by_id("mobilePhone")
+        element_mobile.clear()
+        element_mobile.send_keys("0911757685")
+
+    	# email
+    	element_email = browser.find_element_by_name("email")
+        element_email.clear()
+        element_email.send_keys("steny138@gmail.com")
+
+    	# agree
+    	browser.find_element_by_name("agree").click()
+
+    	# send 
+    	browser.get_screenshot_as_file("Screenshots/3.png")
+
     except Exception, e:
-        print("ERROR")
         print(e)
     finally:
         browser.close()
